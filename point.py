@@ -28,8 +28,10 @@ class Point:
 
 def compute_box(points: List[Point]) -> List[float]:    
     positions = np.array([point.position for point in points])
-    center = np.mean(positions, axis=0)
-    half_size = (np.max(positions, axis=0) - np.min(positions, axis=0)) / 2
+    min_coords = np.min(positions, axis=0)
+    max_coords = np.max(positions, axis=0)
+    center = (min_coords + max_coords) / 2
+    half_size = (max_coords - min_coords) / 2
     return [center[0], center[1], center[2], half_size[0], 0, 0, 0, half_size[1], 0, 0, 0, half_size[2]]
 
 

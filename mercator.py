@@ -31,7 +31,7 @@ def xyz_to_mercator(x, y, z, ref_mercator_x, ref_mercator_y, mercator_constant):
     """
     # 计算新的墨卡托坐标
     new_x = ref_mercator_x + x * mercator_constant
-    new_y = ref_mercator_y + y * mercator_constant
+    new_y = ref_mercator_y - y * mercator_constant
 
     return new_x, new_y
 
