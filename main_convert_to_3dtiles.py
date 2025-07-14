@@ -178,8 +178,8 @@ def splat_to_gltf_with_gaussian_extension(points: List[Point], output_path: str)
     def create_buffer_view(byte_offset: int, data: bytes, target: int = 34962) -> BufferView:
         return BufferView(buffer=0, byteOffset=byte_offset, byteLength=len(data), target=target)
 
-    def create_accessor(buffer_view: int, component_type: int, count: int, type: str, max: List[float] = None, min: List[float] = None) -> Accessor:
-        return Accessor(bufferView=buffer_view, componentType=component_type, count=count, type=type, max=max, min=min)
+    def create_accessor(buffer_view: int, component_type: int, normalized: bool, count: int, type: str, max: List[float] = None, min: List[float] = None) -> Accessor:
+        return Accessor(bufferView=buffer_view, componentType=component_type, normalized=normalized, count=count, type=type, max=max, min=min)
 
     buffer_views = [
         create_buffer_view(0, positions_binary),
@@ -190,11 +190,11 @@ def splat_to_gltf_with_gaussian_extension(points: List[Point], output_path: str)
                            len(colors_binary) + len(rotations_binary), scales_binary)
     ]
     accessors = [
-        create_accessor(0, 5126, len(positions), "VEC3", positions.max(
+        create_accessor(0, 5126, False, len(positions), "VEC3", positions.max(
             axis=0).tolist(), positions.min(axis=0).tolist()),
-        create_accessor(1, 5121, len(colors), "VEC4"),
-        create_accessor(2, 5126, len(normalized_rotations), "VEC4"),
-        create_accessor(3, 5126, len(scales), "VEC3")
+        create_accessor(1, 5121, True, len(colors), "VEC4"),
+        create_accessor(2, 5126, False, len(normalized_rotations), "VEC4"),
+        create_accessor(3, 5126, False, len(scales), "VEC3")
     ]
     gltf.bufferViews.extend(buffer_views)
     gltf.accessors.extend(accessors)
