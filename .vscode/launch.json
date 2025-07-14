@@ -5,17 +5,39 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python Debugger: splat-3dtiles",
+            "name": "tool_gltfpack",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "./tool_gltfpack.py",
+            "console": "integratedTerminal",
+            "python": "D:/Python39/python.exe",
+        },
+        {
+            "name": "tool_proj",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "./tool_proj.py",
+            "console": "integratedTerminal",
+            "python": "D:/Python39/python.exe",
+        },
+        {
+            "name": "main-splat-3dtiles",
             "type": "debugpy",
             "request": "launch",
             "program": "./main.py",
             "console": "integratedTerminal",
             "python": "D:/Python39/python.exe",
             "args": [
-                "--input", "./data/NNU_1/splats", 
-                "--output", "./data/NNU_1/3dtiles",
-                "--enu_origin", "118.91083364082562", "32.116922266350315",
-                "--tile_zoom", "20",                
+                // "--input", "./data/NNU_1/splats", 
+                // "--output", "./data/NNU_1/3dtiles",
+                // "--enu_origin", "118.91083364082562", "32.116922266350315",
+                // "--tile_zoom", "20", 
+                
+                "--input", "./data/NNU_2/splats", 
+                "--output", "./data/NNU_2/3dtiles",
+                "--enu_origin", "118.9062412507131", "32.10569531706962",
+                "--tile_zoom", "20", 
+                
             ],
         }
     ]
