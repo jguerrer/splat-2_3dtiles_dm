@@ -1,45 +1,45 @@
 # splat-3dtiles
 
-## 介绍
+## Introduction
 
-splat-3dtiles 是一款将高斯点云转换为 Cesium 3D Tiles 格式的工具。
+splat-3dtiles is a tool for converting Gaussian point clouds to Cesium 3D Tiles format.
 
-## 效果展示
+## Demo
 
-- 使用 https://github.com/yangjs6/mapbox-3d-tiles， 加载大范围 3dgs，点击图片，可跳转到 b 站查看相关视频。
+- Using https://github.com/yangjs6/mapbox-3d-tiles to load large-scale 3DGS. Click the image to jump to Bilibili to watch the related video.
 
 [![](https://i0.hdslb.com/bfs/archive/0b195aebb064cd5b2222faeda00e94308dc4dea6.jpg@672w_378h_1c.webp)](https://www.bilibili.com/video/BV1qsK3z4Eo5/)
 
 
-## 數據要求
-僅支持 .splat 數據文件，僅支持 z 向上，且以 ENU 坐标系存储。
-暫不支持平移、旋轉、缩放等操作，如果需要，可以先使用其他工具进行转换。
-可使用 SuperSplat 等工具轉換 https://superspl.at/editor
+## Data Requirements
+Only supports .splat data files, only supports Z-up orientation, and must be stored in ENU coordinate system.
+Translation, rotation, and scaling operations are not currently supported. If needed, you can use other tools for conversion first.
+You can use tools like SuperSplat for conversion: https://superspl.at/editor
 
 
-## 思路說明
+## Workflow
 
-1. 读取高斯点云文件，切片成 tiles
-2. 清洗數據，去除飛點，过滤掉透明度过低的点，缩放过大的点，并將相同 tile 合併
-3. 構建 lod 數據，遞歸將 tiles 生成父類 lod 數據
-4. 轉換 3dtiles，生成 glb 文件和 tileset.json 文件
+1. Read Gaussian point cloud files and split them into tiles
+2. Clean data: remove outliers, filter out points with low transparency and excessive scaling, and merge tiles with the same coordinates
+3. Build LOD data: recursively generate parent LOD data from tiles
+4. Convert to 3D Tiles: generate GLB files and tileset.json file
 
-## 設計說明
-1. 由於數據可能非常大，為了充分使用多線程 CPU，使用文件進行交換，且切成 tile 瓦片並行處理。
-2. 初始數據可能有多個 tile，在切割時，即使相同 tile 也寫入不同文件，後續再合併
-3. 沒有將過程文件刪除，是為了避免出錯后從頭開始，可以通過註釋代碼從其中過程繼續
-4. 測試過 10G 以上的數據，但仍然測試不充分
-5. 生成的 3dtiles 數據，可使用 cesium 加載，但效果可能不佳，是為了適配自己寫的另一個渲染而用，https://github.com/yangjs6/mapbox-3d-tiles，
-如果需要用 cesium 加載，可以參考這個工具。
+## Design Notes
+1. Since the data can be very large, files are used for data exchange to fully utilize multi-threaded CPU, and tiles are processed in parallel.
+2. Initial data may contain multiple tiles. During splitting, even identical tiles are written to different files and merged later.
+3. Intermediate files are not deleted to avoid starting from scratch if errors occur. You can continue from intermediate steps by commenting out code.
+4. Tested with data over 10GB, but testing is still not exhaustive.
+5. The generated 3D Tiles data can be loaded with Cesium, but the results may not be optimal. It's designed to work with another custom renderer: https://github.com/yangjs6/mapbox-3d-tiles.
+If you need to load with Cesium, you can refer to that tool.
 
 
-## 使用
+## Usage
 
 ```
 python main.py --input ./data/NNU_1/splats --output ./data/NNU_1/3dtiles --enu_origin 118.91083364082562 32.116922266350315 --tile_zoom 20
 ```
 
-## 參考運行配置
+## Reference Run Configuration
     "configurations": [
         {
             "name": "Python Debugger: splat-3dtiles",
@@ -57,19 +57,19 @@ python main.py --input ./data/NNU_1/splats --output ./data/NNU_1/3dtiles --enu_o
         }
     ]
 
-## 完整參數
+## Complete Parameters
 
-    parser = argparse.ArgumentParser(description="将 3D Gaussian Splatting 点云转换为 Cesium 3D Tiles 格式")
-    parser.add_argument("--input", "-i", required=True, help="输入的高斯点云文件夹.")
-    parser.add_argument("--output", "-o", required=True, help="输出保存 3dtiles 文件夹.")
-    parser.add_argument("--enu_origin", nargs=2, type=float, metavar=('lon', 'lat'), help="指定 ENU 坐标系的原点经纬度 (lon, lat)。默认为 (0.0, 0.0)。")
-    parser.add_argument("--tile_zoom", type=int, default=20, help="分块的等级，默认为 20。")
-    parser.add_argument("--tile_resolution", type=float, default=0.1, help="用于生成 Lod 的参数，20级代表的精度，默认为 0.1 米。")
-    parser.add_argument("--tile_error", type=float, default=1, help="用于生成 tilejson 的 geometric_error 参数，20级代表的误差，默认为 1 米。")
+    parser = argparse.ArgumentParser(description="Convert 3D Gaussian Splatting point cloud to Cesium 3D Tiles format")
+    parser.add_argument("--input", "-i", required=True, help="Input Gaussian point cloud folder.")
+    parser.add_argument("--output", "-o", required=True, help="Output folder to save 3D Tiles.")
+    parser.add_argument("--enu_origin", nargs=2, type=float, metavar=('lon', 'lat'), help="Specify the origin longitude and latitude (lon, lat) of the ENU coordinate system. Default is (0.0, 0.0).")
+    parser.add_argument("--tile_zoom", type=int, default=20, help="Tile zoom level. Default is 20.")
+    parser.add_argument("--tile_resolution", type=float, default=0.1, help="Parameter for generating LOD, representing the precision at zoom level 20. Default is 0.1 meters.")
+    parser.add_argument("--tile_error", type=float, default=1, help="geometric_error parameter for generating tileset.json, representing the error at zoom level 20. Default is 1 meter.")
 
 
-    parser.add_argument("--min_alpha", type=float, default=1.0, help="最小透明度阈值，小于该阈值的高斯点会被过滤，默认为 1.0。")
-    parser.add_argument("--max_scale", type=float, default=10000, help="最大缩放值阈值，大于该阈值的高斯点会被过滤，默认为 10000。")
-    parser.add_argument("--flyers_num", type=int, default=25, help="移除飞点的最临近点数，默认为25。")
-    parser.add_argument("--flyers_dis", type=float, default=10, help="移除飞点的距离因子，最小移除的越多，默认为10。")
+    parser.add_argument("--min_alpha", type=float, default=1.0, help="Minimum alpha threshold. Gaussian points below this threshold will be filtered. Default is 1.0.")
+    parser.add_argument("--max_scale", type=float, default=10000, help="Maximum scale threshold. Gaussian points above this threshold will be filtered. Default is 10000.")
+    parser.add_argument("--flyers_num", type=int, default=25, help="Number of nearest neighbors for removing outliers. Default is 25.")
+    parser.add_argument("--flyers_dis", type=float, default=10, help="Distance factor for removing outliers. Smaller values remove more points. Default is 10.")
     
