@@ -22,7 +22,7 @@ point_num_per_update = 1000
 
 def build_lod_tiles_for_parent(parent_tile_id: TileId, children_tile_ids: List[TileId], input_dir: str, output_dir: str, distance_threshold: float, progress_queue):
     """
-    处理单个父级瓦片的LOD构建
+    Build LOD for a single parent tile
     """
     try:
         parent_tile_file_path = parent_tile_id.getFilePath(output_dir, ".splat")
@@ -38,16 +38,16 @@ def build_lod_tiles_for_parent(parent_tile_id: TileId, children_tile_ids: List[T
         if point_num == 0:
             return lod_points
 
-        # 提取所有点的位置
+        # Extract positions of all points
         positions = np.array([point.position for point in parent_points])
 
-        # 构建 KDTree
+        # Build KDTree
         kdtree = KDTree(positions)
         visited = np.zeros(point_num, dtype=bool)
 
         point_update = 0
         for i in range(point_num):
-            # 每隔1000个点通知主进程一次
+            # Notify main process every 1000 points
             if i % point_num_per_update == 0 or i == point_num - 1:
                 progress_update = (i - point_update) / point_num
                 progress_queue.put(progress_update)
@@ -56,31 +56,31 @@ def build_lod_tiles_for_parent(parent_tile_id: TileId, children_tile_ids: List[T
             if visited[i]:
                 continue
 
-            # 查询当前点的邻域
+            # Query neighborhood of current point
             indices = kdtree.query_ball_point(positions[i], distance_threshold)
 
-            # 标记这些点为已访问
+            # Mark these points as visited
             visited[indices] = True
 
-            # 提取聚类中的点
+            # Extract points in the cluster points in the cluster
             cluster_points = [parent_points[j] for j in indices]
             weights = np.array([point.color[3] / 255.0 for point in cluster_points])
 
-            # 计算加权平均位置
+            # Calculate weighted average position
             weighted_positions = np.average([point.position for point in cluster_points], axis=0, weights=weights)
-            # 计算加权平均颜色
+            # Calculate weighted average color
             weighted_color = np.average([point.color for point in cluster_points], axis=0, weights=weights)
-            # 计算加权平均缩放
+            # Calculate weighted average scale
             # weighted_scale = np.average([point.scale for point in cluster_points], axis=0, weights=weights)
-            # 计算加权平均旋转
+            # Calculate weighted average rotation
             weighted_rotation = np.average([point.rotation for point in cluster_points], axis=0, weights=weights)
 
-            # 计算点的分布范围
+            # Calculate distribution range of pointse distribution range of points
             cluster_positions = np.array([point.position for point in cluster_points])
 
             min_pos = max_pos = np.array(weighted_positions)
 
-            # 计算每个点的边界
+            # Calculate boundary for each point
             for point in cluster_points:
                 p1 = np.array(point.position) - np.array(point.scale)
                 p2 = np.array(point.position) + np.array(point.scale)
@@ -90,40 +90,40 @@ def build_lod_tiles_for_parent(parent_tile_id: TileId, children_tile_ids: List[T
             weighted_scale = (max_pos - min_pos) / 2
 
 
-            weighted_color = np.clip(weighted_color, 0, 255)  # 限制范围
-            weighted_color = np.round(weighted_color).astype(int)  # 取整并转换为整数
+            weighted_color = np.clip(weighted_color, 0, 255)  # Limit range
+            weighted_color = np.round(weighted_color).astype(int)  # Round and convert to integer
 
-            weighted_rotation = np.clip(weighted_rotation, 0, 255)  # 限制范围
-            weighted_rotation = np.round(weighted_rotation).astype(int)  # 取整并转换为整数
+            weighted_rotation = np.clip(weighted_rotation, 0, 255)  # Limit range
+            weighted_rotation = np.round(weighted_rotation).astype(int)  # Round and convert to integer
 
             lod_points.append(Point(weighted_positions, weighted_color, weighted_scale, weighted_rotation))
 
         write_splat_file(parent_tile_file_path, lod_points)
         
-        # 通知主进程任务完成
-        progress_queue.put(None)  # 使用 None 作为任务完成的信号
+        # Notify main process that task is complete
+        progress_queue.put(None)  # Use None as the task completion signal
     except Exception as e:
         print(f"Error in build_lod_tiles_for_parent: {e}")
-        progress_queue.put(None)  # 确保主进程不会阻塞
+        progress_queue.put(None)  # Ensure main process doesn't block
 
 
 def main_build_lod_tiles(input_dir: str, output_dir: str,
                          enu_origin: Tuple[float, float] = (0.0, 0.0),
                          tile_zoom: int = 20, tile_resolution: float = 0.1):
     """
-    构建LOD瓦片，使用多进程并行处理
+    Build LOD tiles using multiprocessing for parallel processing
     """
 
     
-    # 确保输出目录存在
+    # Ensure output directory exists
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
     distance_threshold = tile_resolution * (2** (20 - tile_zoom))
-    # 读取所有Splat文件
+    # Read all Splat files
     splat_files = [f for f in os.listdir(input_dir) if f.endswith('.splat')]
 
-    # 从文件中解析出所有的瓦片
+    # Parse all tiles from filesles from files
     splat_tiles: List[TileId] = []
     for splat_file in splat_files:
         tile_id = TileId.fromString(splat_file)
@@ -134,34 +134,34 @@ def main_build_lod_tiles(input_dir: str, output_dir: str,
         parent_tile_id = tile_id.getParent()
         parent_tiles[parent_tile_id].append(tile_id)
 
-    # 初始化进度队列
+    # Initialize progress queue
     manager = Manager()
     progress_queue = manager.Queue()
 
-    # 初始化进度条
+    # Initialize progress bar
     total_tasks = len(parent_tiles)
     pbar = tqdm(total=total_tasks, desc="Building lod", position=0)
     pbar.mininterval = 0.01
 
-    # 使用多进程并行处理每个父级瓦片
+    # Use multiprocessing to process each parent tile in parallel
     with Pool(processes=cpu_count()) as pool:
         tasks = []
         for parent_tile_id, children_tile_ids in parent_tiles.items():
             tasks.append(pool.apply_async(build_lod_tiles_for_parent, (parent_tile_id, children_tile_ids, input_dir, output_dir, distance_threshold, progress_queue)))
 
-        # 等待所有任务完成
+        # Wait for all tasks to complete
         completed_tasks = 0
         while completed_tasks < total_tasks:
-            progress_update = progress_queue.get()  # 等待子进程通知进度
+            progress_update = progress_queue.get()  # Wait for subprocess to notify progress
 
             if progress_update is None:
-                completed_tasks += 1  # 任务完成信号
+                completed_tasks += 1  # Task completion signal
             else:
-                pbar.update(progress_update)  # 更新进度条
+                pbar.update(progress_update)  # Update progress bar
 
-        # 等待所有任务完成
+        # Wait for all tasks to complete
         for task in tasks:
             task.get()
 
-    # 关闭进度条
+    # Close progress bar
     pbar.close()

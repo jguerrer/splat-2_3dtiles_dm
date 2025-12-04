@@ -18,7 +18,7 @@ class TileManager:
         self.mercator_constant = mercatorZfromAltitude(1, self.enu_origin[1])
         self.zoom_n = mercator_zoom_n(self.tile_zoom)
 
-        # 将经纬度转换成 ECEF 变换矩阵
+        # Convert longitude and latitude to ECEF transformation matrix
         self.transform = geodetic_to_ecef_transformation(enu_origin[0], enu_origin[1])
 
 
@@ -48,7 +48,7 @@ class TileManager:
         #         tile_key, point = result
         #         tiles[tile_key].append(point)
 
-        # 将 tiles 转换成 List[Tile]
+        # Convert tiles to List[Tile]
         self.tiles = []
         for tile_id, points in tiles.items():
             tile = Tile(tile_id)
@@ -57,7 +57,7 @@ class TileManager:
 
        
     def getTiles(self) -> List[Tile]:
-        """获取所有瓦片"""
+        """Get all tiles"""
         return self.tiles
     
     

@@ -1,11 +1,11 @@
 """
-将 3D Gaussian Splatting 点云转换为 Cesium 3D Tiles 格式。
-其中 gltf 文件包含 KHR_gaussian_splatting 扩展。
+Convert 3D Gaussian Splatting point cloud to Cesium 3D Tiles format.
+The glTF files include the KHR_gaussian_splatting extension.
  
-参考资料
+Reference
 https://github.com/CesiumGS/glTF/tree/proposal-KHR_gaussian_splatting/extensions/2.0/Khronos/KHR_gaussian_splatting
 
-作者：杨建顺 20250528
+Author: Yang Jianshun 20250528
 
 """
 
@@ -33,14 +33,14 @@ from tile_manager import TileManager
 __version__ = '0.1'
 
 
-# 将 Splat 数据转换为 glTF 文件
+# Convert Splat data to glTF file
 def splat_to_gltf_with_gaussian_extension(points: List[Point], output_path: str):
     """
-    将 Splat 数据转换为支持 KHR_gaussian_splatting 扩展的 glTF 文件
-    :param points: Point 对象列表
-    :param output_path: 输出的 glTF 文件路径
+    Convert Splat data to glTF file with KHR_gaussian_splatting extension support
+    :param points: List of Point objects
+    :param output_path: Output glTF file path
     """
-    # 提取数据
+    # Extract data
     positions = np.array(
         [point.position for point in points], dtype=np.float32)
     colors = np.array([point.color for point in points], dtype=np.uint8)
@@ -49,21 +49,21 @@ def splat_to_gltf_with_gaussian_extension(points: List[Point], output_path: str)
     # normalized_rotations = rotations / 255.0
     normalized_rotations = ((rotations-128.0)/128.0).astype(np.float32)
 
-    # 创建 GLTF 对象
+    # Create GLTF object
     gltf = GLTF2()
     gltf.extensionsUsed = ["KHR_gaussian_splatting"]
 
-    # 创建 Buffer
+    # Create Buffer
     buffer = Buffer()
     gltf.buffers.append(buffer)
 
-    # 将数据转换为二进制
+    # Convert data to binary
     positions_binary = positions.tobytes()
     colors_binary = colors.tobytes()
     scales_binary = scales.tobytes()
     rotations_binary = normalized_rotations.tobytes()
 
-    # 创建 BufferView 和 Accessor
+    # Create BufferView and Accessor
     def create_buffer_view(byte_offset: int, data: bytes, target: int = 34962) -> BufferView:
         return BufferView(buffer=0, byteOffset=byte_offset, byteLength=len(data), target=target)
 
@@ -88,7 +88,7 @@ def splat_to_gltf_with_gaussian_extension(points: List[Point], output_path: str)
     gltf.bufferViews.extend(buffer_views)
     gltf.accessors.extend(accessors)
 
-    # 创建 Mesh 和 Primitive
+    # Create Mesh and Primitive
     primitive = Primitive(
         attributes={"POSITION": 0, "COLOR_0": 1, "_ROTATION": 2, "_SCALE": 3},
         mode=0,
@@ -98,32 +98,32 @@ def splat_to_gltf_with_gaussian_extension(points: List[Point], output_path: str)
     mesh = Mesh(primitives=[primitive])
     gltf.meshes.append(mesh)
 
-    # 创建 Node 和 Scene
+    # Create Node and Scene
     node = Node(mesh=0)
     gltf.nodes.append(node)
     scene = Scene(nodes=[0])
     gltf.scenes.append(scene)
     gltf.scene = 0
 
-    # 将二进制数据写入 Buffer
+    # Write binary data to Buffer
     gltf.buffers[0].uri = "data:application/octet-stream;base64," + base64.b64encode(
         positions_binary + colors_binary + rotations_binary + scales_binary).decode("utf-8")
     
     gltf.save(output_path)
-    print(f"glTF 文件已保存到: {output_path}")
+    print(f"glTF file saved to: {output_path}")
 
 
-# 读取数据
+# Read data data
 def read_splat_file(file_path: str) -> List[Point]:
     """
-    读取二进制格式的 Splat 文件
-    :param file_path: Splat 文件路径
-    :return: 包含位置、缩放、颜色、旋转数据的 Point 对象列表
+    Read binary format Splat file
+    :param file_path: Splat file path
+    :return: List of Point objects containing position, scale, color, rotation data
     """
     
     stats = os.stat(file_path)
     
-    point_size = 3*4 + 3*4 + 4*1 + 4*1  # 3 float32 + 3 float32 + 4 uint8 + 4 uint8 = 32字节
+    point_size = 3*4 + 3*4 + 4*1 + 4*1  # 3 float32 + 3 float32 + 4 uint8 + 4 uint8 = 32 bytes
 
     point_num = stats.st_size // point_size
     point_i = 0
@@ -131,14 +131,14 @@ def read_splat_file(file_path: str) -> List[Point]:
     points = []
     with open(file_path, 'rb') as f:
         while True:
-            position_data = f.read(3 * 4)  # 3个 Float32，每个4字节
+            position_data = f.read(3 * 4)  # 3 Float32 values, 4 bytes each
             if not position_data:
                 break
             position = struct.unpack('3f', position_data)
             scale = struct.unpack('3f', f.read(3 * 4))
             color = struct.unpack('4B', f.read(4 * 1))
             rotation = struct.unpack('4B', f.read(4 * 1))
-            # 调整四元数顺序 (x, y, z, w) -> (w, x, y, z)
+            # Adjust quaternion order (x, y, z, w) -> (w, x, y, z)
             rotation = (rotation[1], rotation[2], rotation[3], rotation[0])
             points.append(Point(position, color, scale, rotation))
 
@@ -150,12 +150,12 @@ def read_splat_file(file_path: str) -> List[Point]:
     return points
 
 
-# 计算 box 范围
+# Calculate box range
 
 
 
 
-# NumpyEncoder 用于序列化 NumPy 数组
+# NumpyEncoder for serializing NumPy arrays
 
 
 class NumpyEncoder(json.JSONEncoder):
@@ -175,7 +175,7 @@ def get_tile_gltf_filename(tile: Tile):
 
 def generate_tileset_json(output_dir: str, tile_manager: TileManager, geometric_error: int = 100):
     def build_tile_structure(tile: Tile, current_geometric_error: int) -> Dict:
-        # 如果点数为 0，则返回 None
+        # If point count is 0, return None
         if len(tile.getPoints()) == 0:
             return {}
 
@@ -225,26 +225,26 @@ def splat_to_3dtiles_file(input_file: str, output_dir: str, enu_origin: Tuple[fl
                        tile_zoom: float = 20,
                        min_alpha: float = 1.0, max_scale: float = 10000) -> None:
     """
-    将 Splat 点云转换为 Cesium 3D Tiles 格式
-    :param input_file: 输入的 Splat 点云文件路径
-    :param output_dir: 输出的 3D Tiles 文件夹
-    :param tile_center: 点云中心的坐标 (x, y, z)
-    :param min_alpha: 最小透明度阈值，小于该阈值的高斯点会被过滤
-    :param max_scale: 最大缩放值阈值，大于该阈值的高斯点会被过滤
+    Convert Splat point cloud to Cesium 3D Tiles format
+    :param input_file: Input Splat point cloud file path
+    :param output_dir: Output 3D Tiles folder
+    :param tile_center: Center coordinates of point cloud (x, y, z)
+    :param min_alpha: Minimum alpha threshold, Gaussian points below this will be filtered
+    :param max_scale: Maximum scale threshold, Gaussian points above this will be filtered
     """
-    # 确保输出目录存在
+    # Ensure output directory exists
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     
     time1 = time.perf_counter()     
     
-    # 读取 Splat 文件
+    # Read Splat file
     points = read_splat_file(input_file)
 
     time2 = time.perf_counter() 
-    print(f"\n读取 {len(points)} 个点，耗时 {(time2- time1):.2f} 秒")
+    print(f"\nRead {len(points)} points, took {(time2- time1):.2f} seconds")
 
-    # 过滤点
+    # Filter points
     filtered_points = [
         point for point in points
         if point.scale[0] <= max_scale and point.scale[1] <= max_scale and point.scale[2] <= max_scale
@@ -252,62 +252,62 @@ def splat_to_3dtiles_file(input_file: str, output_dir: str, enu_origin: Tuple[fl
     ]
     
     time3 = time.perf_counter() 
-    print(f"过滤后剩余 {len(filtered_points)} 个点 {(time3 - time2):.2f} 秒")
+    print(f"After filtering, {len(filtered_points)} points remain {(time3 - time2):.2f} seconds")
 
-    # 如果没有点，直接返回
+    # If no points, return directly
     if not filtered_points:
-        print("没有满足条件的点，转换结束。")
+        print("No points meet the criteria, conversion ended.")
         return
     
     tile_manager = TileManager(enu_origin, tile_zoom) 
-    # 将点添加到瓦片管理器
+    # Add points to tile manager
     
     tile_manager.setPoints(filtered_points)
     tile_manager.buildLOD()
-    # 获取所有瓦片
+    # Get all tiles
     tiles = tile_manager.getTiles()
 
     time4 = time.perf_counter() 
-    print(f"共生成 {len(tiles)} 个瓦片 {(time4 - time3):.2f} 秒")
+    print(f"Generated {len(tiles)} tiles in {(time4 - time3):.2f} seconds")
 
     for tile in tiles:
         points = tile.getPoints()
         tile_gltf = get_tile_gltf_filename(tile)
         output_file = os.path.join(output_dir, tile_gltf)
-        # 如果瓦片内没有点，跳过
+        # If tile has no points, skip
         if not points:
             continue
-        # 将点转换为 glTF 格式
+        # Convert points to glTF format
         splat_to_gltf_with_gaussian_extension(points, output_file)
     
     generate_tileset_json(output_dir, tile_manager)
     
     time5 = time.perf_counter() 
-    print(f"共生成 {len(tiles)} 个 gltf {(time5 - time4):.2f} 秒")
+    print(f"Generated {len(tiles)} gltf files in {(time5 - time4):.2f} seconds")
 
 
-# 将点云数据转换为 Cesium 3D Tiles 格式
+# Convert point cloud data to Cesium 3D Tiles format Cesium 3D Tiles format
 def splat_to_3dtiles_main(input_dir: str, output_dir: str, 
                           enu_origin: Tuple[float, float] = (0.0, 0.0), tile_zoom: float = 20,
                         tile_center: Tuple[float, float, float] = (0.0, 0.0, 0.0),
                         min_alpha: float = 1.0, max_scale: float = 10000,
                         tile_size: float = 100, min_point_num: int = 10000):
         """
-        将 Splat 点云转换为 Cesium 3D Tiles 格式
-        :param input_dir: 输入的高斯点云文件夹
-        :param output_dir: 输出保存 3dtiles 文件夹
-        :param enu_origin: ENU 坐标系的原点经纬度 (lon, lat)
-        :param tile_center: 点云中心的坐标 (x, y, z)
-        :param min_alpha: 最小透明度阈值
-        :param max_scale: 最大缩放值阈值
-        :param tile_size: 最小分块大小
-        :param min_point_num: 最小分块点数
+        Convert Splat point cloud to Cesium 3D Tiles format
+        :param input_dir: Input Gaussian point cloud folder
+        :param output_dir: Output folder to save 3D Tiles
+        :param enu_origin: Origin longitude and latitude of ENU coordinate system (lon, lat)
+        :param tile_center: Center coordinates of point cloud (x, y, z)
+        :param min_alpha: Minimum alpha threshold
+        :param max_scale: Maximum scale threshold
+        :param tile_size: Minimum tile size
+        :param min_point_num: Minimum tile point count
         """
-        # 确保输出目录存在
+        # Ensure output directory exists
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
 
-        # 读取所有 Splat 文件
+        # Read all Splat files
         splat_files = [f for f in os.listdir(input_dir) if f.endswith('.splat')]        
         for splat_file in splat_files:
             file_path = os.path.join(input_dir, splat_file)
@@ -320,23 +320,23 @@ def splat_to_3dtiles_main(input_dir: str, output_dir: str,
                 max_scale=max_scale
             )
 
-# 主函数
+# Main function
 if __name__ == "__main__":
 
     print(f"splat-3dtiles: {__version__}")
     
-    # 解析命令行参数
+    # Parse command line arguments
     
-    parser = argparse.ArgumentParser(description="将 3D Gaussian Splatting 点云转换为 Cesium 3D Tiles 格式")
-    parser.add_argument("--input", "-i", required=True, help="输入的高斯点云文件夹.")
-    parser.add_argument("--output", "-o", required=True, help="输出保存 3dtiles 文件夹.")
-    parser.add_argument("--enu_origin", nargs=2, type=float, metavar=('lon', 'lat'), help="指定 ENU 坐标系的原点经纬度 (lon, lat)。默认为 (0.0, 0.0)。")
-    parser.add_argument("--tile_zoom", type=float, default=20, help="分块的等级，默认为 20。")
-    parser.add_argument("--tile_center", nargs=3, type=float, metavar=('x', 'y', 'z'), help="指定点云中心的坐标 (x, y, z)。默认为 (0.0, 0.0, 0.0)。")
-    parser.add_argument("--tile_size", type=float, default=100, help="最小分块大小，小于该值将不再分块，默认为 100 米。")
-    parser.add_argument("--min_alpha", type=float, default=1.0, help="最小透明度阈值，小于该阈值的高斯点会被过滤，默认为 1.0。")
-    parser.add_argument("--max_scale", type=float, default=10000, help="最大缩放值阈值，大于该阈值的高斯点会被过滤，默认为 10000。")
-    parser.add_argument("--min_point_num", type=int, default=10000, help="最小分块点数，小于该值将不再分块，默认为 10000 个点。")
+    parser = argparse.ArgumentParser(description="Convert 3D Gaussian Splatting point cloud to Cesium 3D Tiles format")
+    parser.add_argument("--input", "-i", required=True, help="Input Gaussian point cloud folder.")
+    parser.add_argument("--output", "-o", required=True, help="Output folder to save 3D Tiles.")
+    parser.add_argument("--enu_origin", nargs=2, type=float, metavar=('lon', 'lat'), help="Specify the origin longitude and latitude (lon, lat) of the ENU coordinate system. Default is (0.0, 0.0).")
+    parser.add_argument("--tile_zoom", type=float, default=20, help="Tile zoom level. Default is 20.")
+    parser.add_argument("--tile_center", nargs=3, type=float, metavar=('x', 'y', 'z'), help="Specify the center coordinates of the point cloud (x, y, z). Default is (0.0, 0.0, 0.0).")
+    parser.add_argument("--tile_size", type=float, default=100, help="Minimum tile size, tiles smaller than this value will not be further divided. Default is 100 meters.")
+    parser.add_argument("--min_alpha", type=float, default=1.0, help="Minimum alpha threshold. Gaussian points below this threshold will be filtered. Default is 1.0.")
+    parser.add_argument("--max_scale", type=float, default=10000, help="Maximum scale threshold. Gaussian points above this threshold will be filtered. Default is 10000.")
+    parser.add_argument("--min_point_num", type=int, default=10000, help="Minimum tile point count, tiles with fewer points will not be further divided. Default is 10000 points.")
     args = parser.parse_args()
 
 

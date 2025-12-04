@@ -1,11 +1,11 @@
 """
-将 3D Gaussian Splatting 点云转换为 Cesium 3D Tiles 格式。
-其中 gltf 文件包含 KHR_gaussian_splatting 扩展。
+Convert 3D Gaussian Splatting point cloud to Cesium 3D Tiles format.
+The glTF files include the KHR_gaussian_splatting extension.
  
-参考资料
+Reference
 https://github.com/CesiumGS/glTF/tree/proposal-KHR_gaussian_splatting/extensions/2.0/Khronos/KHR_gaussian_splatting
 
-作者：杨建顺 20250528
+Author: Yang Jianshun 20250528
 
 """
 
@@ -21,27 +21,35 @@ from main_clean_tiles import main_clean_tiles
 from main_build_lod_tiles import main_build_lod_tiles
 
 
-# 主函数
+# Main function
+
+# general  workflow is:
+# 1 ) Split original splat files into tiles
+# 2 ) Clean tiles to remove outliers and invalid points 
+# 3 ) Build LOD tiles from cleaned tiles
+# 4 ) Convert built LOD tiles to 3D Tiles format
+
+# considerations involve providing ENU coordinates
 if __name__ == "__main__":
     freeze_support()
     
     __version__ = getVersion()
     print(f"splat-3dtiles: {__version__}")
     
-    # 解析命令行参数
-    parser = argparse.ArgumentParser(description="将 3D Gaussian Splatting 点云转换为 Cesium 3D Tiles 格式")
-    parser.add_argument("--input", "-i", required=True, help="输入的高斯点云文件夹.")
-    parser.add_argument("--output", "-o", required=True, help="输出保存 3dtiles 文件夹.")
-    parser.add_argument("--enu_origin", nargs=2, type=float, metavar=('lon', 'lat'), help="指定 ENU 坐标系的原点经纬度 (lon, lat)。默认为 (0.0, 0.0)。")
-    parser.add_argument("--tile_zoom", type=int, default=20, help="分块的等级，默认为 20。")
-    parser.add_argument("--tile_resolution", type=float, default=0.1, help="用于生成 Lod 的参数，20级代表的精度，默认为 0.1 米。")
-    parser.add_argument("--tile_error", type=float, default=1, help="用于生成 tilejson 的 geometric_error 参数，20级代表的误差，默认为 1 米。")
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description="Convert 3D Gaussian Splatting point cloud to Cesium 3D Tiles format")
+    parser.add_argument("--input", "-i", required=True, help="Input Gaussian point cloud folder.")
+    parser.add_argument("--output", "-o", required=True, help="Output folder to save 3D Tiles.")
+    parser.add_argument("--enu_origin", nargs=2, type=float, metavar=('lon', 'lat'), help="Specify the origin longitude and latitude (lon, lat) of the ENU coordinate system. Default is (0.0, 0.0).")
+    parser.add_argument("--tile_zoom", type=int, default=20, help="Tile zoom level. Default is 20.")
+    parser.add_argument("--tile_resolution", type=float, default=0.1, help="Parameter for generating LOD, representing the precision at zoom level 20. Default is 0.1 meters.")
+    parser.add_argument("--tile_error", type=float, default=1, help="geometric_error parameter for generating tileset.json, representing the error at zoom level 20. Default is 1 meter.")
 
 
-    parser.add_argument("--min_alpha", type=float, default=1.0, help="最小透明度阈值，小于该阈值的高斯点会被过滤，默认为 1.0。")
-    parser.add_argument("--max_scale", type=float, default=10000, help="最大缩放值阈值，大于该阈值的高斯点会被过滤，默认为 10000。")
-    parser.add_argument("--flyers_num", type=int, default=25, help="移除飞点的最临近点数，默认为25。")
-    parser.add_argument("--flyers_dis", type=float, default=10, help="移除飞点的距离因子，最小移除的越多，默认为10。")
+    parser.add_argument("--min_alpha", type=float, default=1.0, help="Minimum alpha threshold. Gaussian points below this threshold will be filtered. Default is 1.0.")
+    parser.add_argument("--max_scale", type=float, default=10000, help="Maximum scale threshold. Gaussian points above this threshold will be filtered. Default is 10000.")
+    parser.add_argument("--flyers_num", type=int, default=25, help="Number of nearest neighbors for removing outliers. Default is 25.")
+    parser.add_argument("--flyers_dis", type=float, default=10, help="Distance factor for removing outliers. Smaller values remove more points. Default is 10.")
     
     args = parser.parse_args()
 
@@ -81,6 +89,7 @@ if __name__ == "__main__":
 
         lod_input_dir = lod_output_dir
         lod_zoom -= 1
-
+    
+    #fails
     main_convert_to_3dtiles(build_output_dir, result_output_dir, enu_origin, tile_zoom, tile_error)
     

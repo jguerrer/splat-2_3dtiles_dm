@@ -4,7 +4,7 @@ from typing import List, Tuple
 from point import Point, compute_box
 
 
-# 定义瓦片的数据结构
+# Define tile data structure
 class TileId:
     def __init__(self, x: int, y: int, z: int):
         self.x = x
@@ -13,7 +13,7 @@ class TileId:
 
 
     def toString(self) -> str:
-        """将瓦片 ID 转换为字符串"""
+        """Convert tile ID to string"""
         return f"tile_{self.z}_{self.x}_{self.y}"
     
     def getFilePath(self, output_dir: str, ext: str) -> str:
@@ -66,21 +66,21 @@ class TileId:
 
 class Tile:
     def __init__(self, tile_id: TileId):
-        self.tile_id = tile_id  # 瓦片 ID
-        self.points = list()  # 瓦片内的点列表
+        self.tile_id = tile_id  # Tile ID
+        self.points = list()  # List of points in the tile
         self.bounds = []
         self.children = list()
 
     def isEmpty(self) -> bool:
-        """检查瓦片是否为空"""
+        """Check if tile is empty"""
         return len(self.points) == 0
 
     def getPointCount(self) -> int:
-        """获取瓦片内点的数量"""
+        """Get the number of points in the tile"""
         return len(self.points)
     
     def addPoint(self, point: 'Point'):
-        """向瓦片添加点"""
+        """Add point to tile"""
         self.points.append(point)
     
     def setPoints(self, points: List[Point]):
@@ -88,7 +88,7 @@ class Tile:
         self.bounds = compute_box(points)
 
     def getPoints(self) -> List[Point]:
-        """获取瓦片内的所有点"""
+        """Get all points in the tile"""
         return self.points
     
     def addChild(self, tile: 'Tile'):
@@ -101,7 +101,7 @@ class Tile:
         self.children = children
     
     def getTileId(self) -> TileId:
-        """获取瓦片 ID"""
+        """Get tile ID"""
         return self.tile_id
     
     def getBounds(self):

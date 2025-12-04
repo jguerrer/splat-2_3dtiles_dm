@@ -2,7 +2,7 @@ import struct
 from typing import List, Tuple
 import numpy as np
 
-# 定义点的数据结构
+# Define point data structure
 class Point:
     def __init__(self, position: Tuple[float, float, float], color: Tuple[int, int, int, int],
                  scale: Tuple[float, float, float], rotation: Tuple[int, int, int, int]):
@@ -12,12 +12,12 @@ class Point:
         self.rotation = rotation
 
     def to_bytes(self) -> bytes:
-        """将点数据打包为二进制格式"""
+        """Pack point data into binary format"""
         return struct.pack('3f4B3f4B', *self.position, *self.color, *self.scale, *self.rotation)
 
     @classmethod
     def from_bytes(cls, data: bytes):
-        """从二进制数据解析为点"""
+        """Parse point from binary data"""
         unpacked = struct.unpack('3f4B3f4B', data)
         position = unpacked[:3]
         color = unpacked[3:7]
@@ -37,25 +37,25 @@ def compute_box(points: List[Point]) -> List[float]:
 
 def merge_box(box_list: List[List[float]]) -> List[float]:
     """
-    合并多个边界框
-    :param box_list: 一个包含多个边界框的列表，每个边界框是一个长度为12的列表
-    :return: 合并后的边界框，也是一个长度为12的列表
+    Merge multiple bounding boxes
+    :param box_list: A list containing multiple bounding boxes, each bounding box is a list of length 12
+    :return: Merged bounding box, also a list of length 12
     """
     if not box_list:
-        raise ValueError("box_list 不能为空")
+        raise ValueError("box_list cannot be empty")
 
-    # 提取所有边界框的中心点和半尺寸
+    # Extract center points and half sizes of all bounding boxespoints and half sizes of all bounding boxes
     centers = np.array([box[:3] for box in box_list])
     half_sizes = np.array([box[3::4] for box in box_list])
 
-    # 计算所有边界框的最小和最大坐标
+    # Calculate minimum and maximum coordinates of all bounding boxes
     min_coords = np.min(centers - half_sizes, axis=0)
     max_coords = np.max(centers + half_sizes, axis=0)
 
-    # 计算合并后的边界框的中心点和半尺寸
+    # Calculate center point and half size of merged bounding box
     merged_center = (min_coords + max_coords) / 2
     merged_half_size = (max_coords - min_coords) / 2
 
-    # 构造合并后的边界框
+    # Construct merged bounding box
     merged_box = list(merged_center) + [merged_half_size[0], 0, 0, 0, merged_half_size[1], 0, 0, 0, merged_half_size[2]]
     return merged_box

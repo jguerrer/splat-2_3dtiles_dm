@@ -5,12 +5,12 @@ from tqdm import tqdm
 
 def compress_gltf_file(input_file: str, output_file: str, progress_queue) -> None:
     """
-    使用 gltfpack 压缩单个 glb 文件
-    :param file_path: glb 文件的完整路径
+    Compress a single glb file using gltfpack
+    :param file_path: Full path to the glb file
     """
 
-    # 通知主进程任务完成
-    progress_queue.put(None)  # 使用 None 作为任务完成的信号
+    # Notify main process that task is complete
+    progress_queue.put(None)  # Use None as the task completion signal
     
     current_directory = os.getcwd()
     command = current_directory + "/bin/gltfpack.exe -i " + input_file + " -o " + output_file + " -cc -vpf "
@@ -21,9 +21,9 @@ def compress_gltf_file(input_file: str, output_file: str, progress_queue) -> Non
 
 def collect_gltf_files(root_dir: str) -> list:
     """
-    收集指定目录及其子目录下的所有 glb 文件路径
-    :param root_dir: 要遍历的根目录
-    :return: 包含所有 glb 文件路径的列表
+    Collect all glb file paths in the specified directory and its subdirectories
+    :param root_dir: Root directory to traverse
+    :return: List containing all glb file paths
     """
     gltf_files = []
     for subdir, _, files in os.walk(root_dir):
@@ -34,35 +34,35 @@ def collect_gltf_files(root_dir: str) -> list:
 
 def compress_gltf_files(input_dir: str, output_dir: str) -> None:
     """
-    使用多进程并行压缩 glb 文件
-    :param root_dir: 要遍历的根目录
+    Compress glb files in parallel using multiprocessing
+    :param root_dir: Root directory to traverse
     """
     gltf_files = collect_gltf_files(input_dir)
 
     if not gltf_files:
-        print("未找到 glb 文件")
+        print("No glb files found")
         return
     
     file_num = len(gltf_files)
 
-    # 获取 CPU 核心数
+    # Get CPU core count
     num_processes = cpu_count()
-    print(f'开始使用 {num_processes} 个进程进行并行压缩...')
+    print(f'Starting parallel compression with {num_processes} processes...')
 
-    # 确保输出目录存在
+    # Ensure output directory exists
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
-    # 初始化进度队列
+    # Initialize progress queue
     manager = Manager()
     progress_queue = manager.Queue()
 
-    # 初始化进度条
+    # Initialize progress barlize progress bar
     pbar = tqdm(total=file_num, desc="Convert gltf", position=0)
     pbar.mininterval = 0.01
 
 
-    # 使用多进程并行处理切块
+    # Use multiprocessing for parallel processing
     with Pool(processes=cpu_count()) as pool:
         tasks = []
         for input_file in gltf_files:
@@ -73,17 +73,17 @@ def compress_gltf_files(input_dir: str, output_dir: str) -> None:
 
             tasks.append(pool.apply_async(compress_gltf_file, (input_file, output_file, progress_queue)))
 
-        # 等待所有任务完成
+        # Wait for all tasks to complete
         completed_tasks = 0
         while completed_tasks < file_num:
-            progress_update = progress_queue.get()  # 等待子进程通知进度
+            progress_update = progress_queue.get()  # Wait for subprocess to notify progress
 
             if progress_update is None:
-                completed_tasks += 1  # 任务完成信号
+                completed_tasks += 1  # Task completion signal
                 
-            pbar.update(1)  # 更新进度条
+            pbar.update(1)  # Update progress bar
 
-            # 等待所有任务完成
+            # Wait for all tasks to complete
             for task in tasks:
                 task.get()
 
@@ -92,4 +92,4 @@ if __name__ == "__main__":
     input_dir = os.path.abspath('./data/NNU_2/3dtiles/result/')
     output_dir = os.path.abspath('./data/NNU_2/3dtiles/result_opt/')
     compress_gltf_files(input_dir, output_dir)
-    print("所有 glb 文件的并行压缩完成！")
+    print("Parallel compression of all glb files complete!")

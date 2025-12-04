@@ -16,39 +16,39 @@ from tile_manager import TileManager
 from pygltflib import GLTF2, Scene, Node, Mesh, Primitive, Buffer, BufferView, Accessor
 
 
-# 将 Splat 数据转换为 glTF 文件
+# Convert Splat data to glTF file
 def splat_to_gltf_with_gaussian_extension(points: List[Point], output_path: str):
     """
-    将 Splat 数据转换为支持 KHR_gaussian_splatting 扩展的 glTF 文件
-    :param points: Point 对象列表
-    :param output_path: 输出的 glTF 文件路径
+    Convert Splat data to glTF file with KHR_gaussian_splatting extension support
+    :param points: List of Point objects
+    :param output_path: Output glTF file path
     """
-    # 提取数据
+    # Extract data
     positions = np.array(
         [point.position for point in points], dtype=np.float32)
     colors = np.array([point.color for point in points], dtype=np.uint8)
     scales = np.array([point.scale for point in points], dtype=np.float32)
     rotations = np.array([point.rotation for point in points], dtype=np.uint8)
 
-    # 调整四元数顺序 (w, x, y, z) -> (x, y, z, w)
+    # Adjust quaternion order (w, x, y, z) -> (x, y, z, w)
     rotations = rotations[:, [1, 2, 3, 0]]
     normalized_rotations = ((rotations-128.0)/128.0).astype(np.float32)
 
-    # 创建 GLTF 对象
+    # Create GLTF object
     gltf = GLTF2()
     gltf.extensionsUsed = ["KHR_gaussian_splatting"]
 
-    # 创建 Buffer
+    # Create Buffer
     buffer = Buffer()
     gltf.buffers.append(buffer)
 
-    # 将数据转换为二进制
+    # Convert data to binary
     positions_binary = positions.tobytes()
     colors_binary = colors.tobytes()
     scales_binary = scales.tobytes()
     rotations_binary = normalized_rotations.tobytes()
 
-    # 创建 BufferView 和 Accessor
+    # Create BufferView and Accessor
     def create_buffer_view(byte_offset: int, data: bytes, target: int = 34962) -> BufferView:
         return BufferView(buffer=0, byteOffset=byte_offset, byteLength=len(data), target=target)
 
@@ -73,7 +73,7 @@ def splat_to_gltf_with_gaussian_extension(points: List[Point], output_path: str)
     gltf.bufferViews.extend(buffer_views)
     gltf.accessors.extend(accessors)
 
-    # 创建 Mesh 和 Primitive
+    # Create Mesh and Primitive
     primitive = Primitive(
         attributes={"POSITION": 0, "COLOR_0": 1, "_ROTATION": 2, "_SCALE": 3},
         mode=0,
@@ -83,36 +83,36 @@ def splat_to_gltf_with_gaussian_extension(points: List[Point], output_path: str)
     mesh = Mesh(primitives=[primitive])
     gltf.meshes.append(mesh)
 
-    # 创建 Node 和 Scene
+    # Create Node and Scene
     node = Node(mesh=0)
     gltf.nodes.append(node)
     scene = Scene(nodes=[0])
     gltf.scenes.append(scene)
     gltf.scene = 0
 
-    # 将二进制数据写入 Buffer
+    # Write binary data to Buffer
     gltf.buffers[0].uri = "data:application/octet-stream;base64," + base64.b64encode(
         positions_binary + colors_binary + rotations_binary + scales_binary).decode("utf-8")
     
     gltf.save(output_path)
 
 
-# 将单个高斯溅射的数据文件切块
+# Convert single Gaussian splatting data file to tiles
 def convert_to_gltf(input_file: str, output_file: str, progress_queue) -> None:
 
     points = read_splat_file(input_file)
     splat_to_gltf_with_gaussian_extension(points, output_file)
     
-    # 通知主进程任务完成
-    progress_queue.put(None)  # 使用 None 作为任务完成的信号
+    # Notify main process that task is complete
+    progress_queue.put(None)  # Use None as the task completion signal
 
 
-# 将高斯溅射的数据切块
+# Convert Gaussian splatting data to tilesussian splatting data to tiles
 def main_convert_to_gltf(input_dir: str, output_dir: str, 
                         enu_origin: Tuple[float, float] = (0.0, 0.0),
                         tile_zoom: int = 20):
 
-    # 确保输出目录存在
+    # Ensure output directory exists
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
@@ -125,19 +125,19 @@ def main_convert_to_gltf(input_dir: str, output_dir: str,
         if not os.path.exists(output_sub_dir):
             os.makedirs(output_sub_dir)
 
-        # 读取所有 Splat 文件
+        # Read all Splat files
         splat_files = [f for f in os.listdir(input_sub_dir) if f.endswith('.splat')]  
         file_num = len(splat_files)
 
-        # 初始化进度队列
+        # Initialize progress queue
         manager = Manager()
         progress_queue = manager.Queue()
 
-        # 初始化进度条
+        # Initialize progress bar
         pbar = tqdm(total=file_num, desc="Convert gltf", position=0)
         pbar.mininterval = 0.01
 
-        # 使用多进程并行处理切块
+        # Use multiprocessing for parallel processing
         with Pool(processes=cpu_count()) as pool:
             tasks = []
             for splat_file in splat_files:
@@ -149,19 +149,19 @@ def main_convert_to_gltf(input_dir: str, output_dir: str,
 
                 tasks.append(pool.apply_async(convert_to_gltf, (input_file_path, output_file_path, progress_queue)))
 
-            # 等待所有任务完成
+            # Wait for all tasks to complete
             completed_tasks = 0
             while completed_tasks < file_num:
-                progress_update = progress_queue.get()  # 等待子进程通知进度
+                progress_update = progress_queue.get()  # Wait for subprocess to notify progress
 
                 if progress_update is None:
-                    completed_tasks += 1  # 任务完成信号
+                    completed_tasks += 1  # Task completion signal
                     
-                pbar.update(1)  # 更新进度条
+                pbar.update(1)  # Update progress bar
 
-            # 等待所有任务完成
+            # Wait for all tasks to complete
             for task in tasks:
                 task.get()
 
-        # 关闭进度条
+        # Close progress bar
         pbar.close()
