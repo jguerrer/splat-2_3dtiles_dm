@@ -73,3 +73,18 @@ python main.py --input ./data/NNU_1/splats --output ./data/NNU_1/3dtiles --enu_o
     parser.add_argument("--flyers_num", type=int, default=25, help="Number of nearest neighbors for removing outliers. Default is 25.")
     parser.add_argument("--flyers_dis", type=float, default=10, help="Distance factor for removing outliers. Smaller values remove more points. Default is 10.")
     
+
+# Additions: 
+## Geospatial translations
+    Geospatial datasets require a different workflow from the cameras and pointclouds, gaussian splat generationa and 3d tileset creation.
+
+    Creating gaussian splats from world coordinates introduce numeric errors, which must be take care at different stages..
+   1  When exporting datasets in world coords, UTM or some xyz same unit coords, the large numbers must be scaled or translated to become close to zero, 
+    - the classical approach is either compute a centroid number and use it for translation of the complete dataset, but may require a complete pass over the dataset.
+    - Another approach is to take a single point, the first and use it to scale all data around it, no it is immediately converted. 
+    In all cases, the coordinate must be stored in local coordinates, with EPSG code and converted into WGS84 coord.
+    3D tiles use ECEF coords.
+
+For the process, ECEF is used for exporting 
+
+    Once points are transformed, the gaussians are computed and the splat or ply output is turned into 3d tiles, using the center coordinate as reference for the dataset.

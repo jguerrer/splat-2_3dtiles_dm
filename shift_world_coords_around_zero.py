@@ -144,6 +144,18 @@ if AUTO_REFERENCE:
     all_centers = np.array(list(centers.values()))
     REFERENCE = all_centers.mean(axis=0)
     print("Using average camera center as reference:", REFERENCE)
+    save_ref = path + "reference.txt"
+    with open(save_ref, "w") as f:
+        f.write(f"# Reference point (average camera center)\n")
+        f.write(f"{REFERENCE[0]} {REFERENCE[1]} {REFERENCE[2]}\n")  
+    #aving in wgs84
+    proj_file = path + "reference_wgs84.txt"
+    import pyproj
+    transformer = pyproj.Transformer.from_crs("EPSG:4978", "EPSG:4326", always_xy=True)
+    lon, lat, alt = transformer.transform(REFERENCE[0], REFERENCE[1], REFERENCE[2])
+    with open(proj_file, "w") as f:
+        f.write(f"# Reference point in WGS84 (lon, lat, alt)\n")
+        f.write(f"{lon} {lat} {alt}\n") 
 
 # # Shift camera centers
 centers_shifted = {img_id: C - REFERENCE for img_id, C in centers.items()}
