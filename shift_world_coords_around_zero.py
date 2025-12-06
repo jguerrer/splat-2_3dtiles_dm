@@ -127,21 +127,29 @@ def write_points_shifted(points, shift, out="points3D_shifted.txt"):
 # ----------------------------------------------------------
 # MAIN
 # ----------------------------------------------------------
-points = read_points3d("points3D.txt")
-images = read_images("images.txt")
+path = r"H:\deep_matrix\tower_images_1040_124\tower_images_1040_124\colmap_highest_ecef\sparse\0\\"
+points = read_points3d(path + "points3D.txt")
+images = read_images(path + "images.txt")
+print(f"Read {len(points)} points and {len(images)} images.")
 
-# Compute camera centers
-centers = compute_camera_centers(images)
 
+# Compute camera centers in world coordinates, so they are translated
+centers = compute_camera_centers(images) #
+
+print("Camera centers (world coordinates):")
+for img_id, C in centers.items():
+    print(f"Image {img_id}: Center = {C}")  
 # Choose reference
 if AUTO_REFERENCE:
     all_centers = np.array(list(centers.values()))
     REFERENCE = all_centers.mean(axis=0)
     print("Using average camera center as reference:", REFERENCE)
 
-# Shift camera centers
+# # Shift camera centers
 centers_shifted = {img_id: C - REFERENCE for img_id, C in centers.items()}
 
-# Write outputs
-write_images_shifted(images, centers_shifted)
-write_poi_
+# # Write outputs
+write_images_shifted(images, centers_shifted, out=path + "images_shifted.txt")
+write_points_shifted(points, REFERENCE, out=path + "points3D_shifted.txt"   )
+
+print("Done. Files written: images_shifted.txt, points3D_shifted.txt")
